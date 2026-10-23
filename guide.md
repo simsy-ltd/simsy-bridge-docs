@@ -80,7 +80,7 @@ WEBHOOK_SECRET=...
 `docker-compose.yml`:
 
 ```yaml
-# SIMSY Tailscale bridge, run yourself. See the bridge guide on www.s-imsy.com.
+# SIMSY Tailscale bridge, run yourself: https://s-imsy.com/developers/tools/tailscale/bridge-guide
 services:
   simsy-bridge:
     image: ghcr.io/simsy-ltd/simsy-bridge:0.1   # pin a version; see the guide to verify it
@@ -139,7 +139,7 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -d '{"allowed": false}' local
 
 Takes effect at once and survives restarts. `DELETE` on the same address returns to the config file's setting. Editing `config.yaml` and sending `docker compose kill -s HUP simsy-bridge` also works.
 
-**Events**: state changes and every access to a device can be sent to your systems, signed. See *Bridge events and webhooks*.
+**Events**: state changes and every access to a device can be sent to your systems, signed. See *Bridge events and webhooks* (https://s-imsy.com/developers/tools/tailscale/webhooks).
 
 **Upgrade**: change the image tag in `docker-compose.yml`, then `docker compose up -d`. The bridge keeps its keys and identity; SIM traffic pauses for a few seconds. To check an image was built by SIMSY:
 

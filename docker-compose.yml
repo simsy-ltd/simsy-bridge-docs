@@ -1,4 +1,4 @@
-# SIMSY Tailscale bridge, run yourself. See the bridge guide on www.s-imsy.com.
+# SIMSY Tailscale bridge, run yourself: https://s-imsy.com/developers/tools/tailscale/bridge-guide
 services:
   simsy-bridge:
     image: ghcr.io/simsy-ltd/simsy-bridge:0.1   # pin a version; see the guide to verify it

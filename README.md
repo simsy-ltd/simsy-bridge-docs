@@ -8,6 +8,9 @@ your devices ── SIMSY SIMs ── SIMSY core ══ encrypted tunnel ══ 
 
 ## Documents
 
+Also on the SIMSY website: https://s-imsy.com/developers/tools/tailscale
+
+
 | File | What |
 |---|---|
 | [guide.md](guide.md) | Setting up and running the bridge |
