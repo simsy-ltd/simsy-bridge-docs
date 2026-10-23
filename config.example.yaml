@@ -1,0 +1,22 @@
+# SIMSY Tailscale bridge: example config.yaml. See the bridge guide.
+# Values in ${...} come from the environment (.env next to the compose file).
+mode: tenant
+state_dir: /var/lib/simsy-bridge
+listen:
+  public_address: 203.0.113.10      # this host's public IPv4 address
+simsy:
+  token: ${SIMSY_API_TOKEN}
+  redundancy_zone: europe-primary
+tenants:
+  - name: fleet-a
+    vslice: fleet-a                  # your VSlice's moniker
+    sim_range: 10.20.0.0/24          # its SIM address range
+    downlink_allowed: true           # false: uplink only
+    tailscale:
+      oauth_client_id: ${TS_OAUTH_CLIENT_ID}
+      oauth_client_secret: ${TS_OAUTH_CLIENT_SECRET}
+    webhook:                         # optional: see Bridge events and webhooks
+      url: https://example.com/hooks/simsy
+      secret: ${WEBHOOK_SECRET}
+api:
+  listen: 0.0.0.0:9100

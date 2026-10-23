@@ -1,0 +1,24 @@
+# SIMSY Tailscale bridge, run yourself. See the bridge guide on www.s-imsy.com.
+services:
+  simsy-bridge:
+    image: ghcr.io/simsy-ltd/simsy-bridge:0.1   # pin a version; see the guide to verify it
+    container_name: simsy-bridge
+    restart: unless-stopped
+    # No NET_ADMIN and no /dev/net/tun: WireGuard and Tailscale both run in
+    # userspace inside the container. Only two UDP ports are published.
+    ports:
+      - "51820:51820/udp"            # SIMSY dials this (fixed by SIMSY)
+      - "41641:41641/udp"            # Tailscale direct connections
+      - "127.0.0.1:9100:9100/tcp"    # API, reachable from this host only
+    volumes:
+      - ./config.yaml:/etc/simsy-bridge/config.yaml:ro
+      - state:/var/lib/simsy-bridge  # keys, Tailscale identity, event queue
+    env_file: .env
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs: [/tmp]                    # scratch space; the root filesystem is read-only
+    cap_drop: [ALL]
+
+volumes:
+  state:
