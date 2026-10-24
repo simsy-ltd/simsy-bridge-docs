@@ -166,4 +166,6 @@ cosign verify ghcr.io/simsy-ltd/simsy-bridge:<version> \
 
 Devices answer by address but a device cannot reach your tailnet: add a grant with your SIM range as the source (step 1, second grant).
 
+One device does not answer at all while others on the same VSlice do: if it has another internet connection besides its SIMSY SIM (a second SIM, Ethernet or Wi-Fi), it probably sends its replies out of that one. Add a route on the device sending 100.64.0.0/10 out of its SIMSY cellular interface, and keep its default route as it is. Check on the device with `ip route get 100.100.100.100`: the answer should name the SIMSY interface.
+
 Support: support@s-imsy.com
