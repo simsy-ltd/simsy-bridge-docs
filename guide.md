@@ -83,7 +83,7 @@ WEBHOOK_SECRET=...
 # SIMSY Tailscale bridge, run yourself: https://s-imsy.com/developers/tools/tailscale/bridge-guide
 services:
   simsy-bridge:
-    image: ghcr.io/simsy-ltd/simsy-bridge:0.1   # pin a version; see the guide to verify it
+    image: public.ecr.aws/simsy/simsy-bridge:0.2   # pin a version; see the guide to verify it
     container_name: simsy-bridge
     restart: unless-stopped
     # No NET_ADMIN and no /dev/net/tun: WireGuard and Tailscale both run in
@@ -144,7 +144,7 @@ Takes effect at once and survives restarts. `DELETE` on the same address returns
 **Upgrade**: change the image tag in `docker-compose.yml`, then `docker compose up -d`. The bridge keeps its keys and identity; SIM traffic pauses for a few seconds. To check an image was built by SIMSY:
 
 ```bash
-cosign verify ghcr.io/simsy-ltd/simsy-bridge:<version> \
+cosign verify public.ecr.aws/simsy/simsy-bridge:<version> \
   --certificate-identity-regexp '^https://github.com/simsy-ltd/simsy-bridge/\.github/workflows/release\.yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```

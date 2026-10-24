@@ -20,7 +20,7 @@ Also on the SIMSY website: https://s-imsy.com/developers/tools/tailscale
 
 ## The image
 
-`ghcr.io/simsy-ltd/simsy-bridge`, for `linux/amd64` and `linux/arm64`. Every release is signed, with an SBOM and build provenance; the guide shows how to verify a signature before you run it.
+`public.ecr.aws/simsy/simsy-bridge` (Amazon ECR Public; no login needed to pull), for `linux/amd64` and `linux/arm64`. Every release is signed, with an SBOM and build provenance; the guide shows how to verify a signature before you run it.
 
 ## Support
 
