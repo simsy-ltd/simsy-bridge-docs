@@ -23,6 +23,10 @@ Add to your tailnet policy file, replacing `fleet-a` with your VSlice's name:
     "tag:simsy":             ["autogroup:admin", "tag:simsy-provisioner"],
     "tag:simsy-fleet-a":     ["autogroup:admin", "tag:simsy-provisioner"],
 },
+// The bridge's route is approved by the policy, not by the bridge.
+"autoApprovers": {
+    "routes": {"10.20.0.0/24": ["tag:simsy-fleet-a"]},
+},
 "grants": [
     // Who may reach the SIM devices, and how.
     {"src": ["group:ops"], "dst": ["10.20.0.0/24"], "ip": ["tcp:22", "tcp:443"]},
@@ -39,9 +43,9 @@ Grant only what the devices need: a grant to the SIM range reaches every device 
 ],
 ```
 
-Then **Settings, OAuth clients, Generate**: scopes **Devices: Core**, **Devices: Routes** and **Auth Keys**, all write, tagged **only** `tag:simsy-provisioner`. Keep the client ID and secret for step 3. The owner tag matters: an OAuth client's keys must carry exactly its own tags, or tags those tags own.
+Then **Settings, OAuth clients, Generate**: scopes **Auth Keys** (write), **Devices: Core** (read) and **Devices: Routes** (read), tagged **only** `tag:simsy-provisioner`. The bridge needs nothing more: it only reads your machines, and the policy approves its route. Keep the client ID and secret for step 3. The owner tag matters: an OAuth client's keys must carry exactly its own tags, or tags those tags own.
 
-Protect this secret like an admin password: anyone holding it can add machines with the bridge's tags to your tailnet. Keep it only on the bridge's host, and rotate it if the host is ever compromised.
+Protect this secret like an admin password: anyone holding it can add machines with the bridge's tags to your tailnet, and the policy would approve their route to your SIMs too. Keep it only on the bridge's host, and rotate it if the host is ever compromised. The bridge should be the only machine with `tag:simsy-fleet-a`: a second one in the admin console, or a Tailscale **Node created** notification you did not expect, means the secret is being used elsewhere.
 
 ## 2. The host
 
@@ -167,7 +171,7 @@ cosign verify public.ecr.aws/simsy/simsy-bridge:<version> \
 
 A tag can be moved; a digest cannot. After verifying, pin the digest `cosign verify` printed: `image: public.ecr.aws/simsy/simsy-bridge@sha256:...`. Each release is listed, with its security fixes, in the bridge's changelog.
 
-**Remove**: add `delete: true` to the tenant in `config.yaml`, run `docker compose kill -s HUP simsy-bridge`, wait for `deleted` in the log, then `docker compose down`. The bridge removes its Tailscale machine, its rule and its routing target. Remove the policy lines yourself.
+**Remove**: add `delete: true` to the tenant in `config.yaml`, run `docker compose kill -s HUP simsy-bridge`, wait for `deleted` in the log, then `docker compose down`. The bridge removes its rule and its routing target, and logs the name of its Tailscale machine: remove that machine in the admin console (the OAuth client can only read machines). Remove the policy lines and the OAuth client yourself.
 
 ## When something is wrong
 
@@ -176,7 +180,7 @@ A tag can be moved; a digest cannot. After verifying, pin the digest `cosign ver
 | Reason | What to do |
 |---|---|
 | `tags_not_assignable` | The `tagOwners` lines in step 1 are missing, or the OAuth client is not tagged `tag:simsy-provisioner`. |
-| `route_unapproved` | Usually clears by itself within a minute. If not, check the OAuth client has Devices: Routes (write). |
+| `route_unapproved` | Usually clears by itself within a minute. If not, check `autoApprovers` in your policy names your SIM range and your VSlice's tag exactly (step 1). |
 | `handshake_stale` | SIMSY cannot reach the bridge: check UDP 51820 is open from SIMSY's address and `public_address` is right. |
 | `simsy_api_error` | Check the SIMSY token and the VSlice name. The detail says which call failed. |
 | `ts_offline` | The host cannot reach Tailscale: check outbound internet access. |
