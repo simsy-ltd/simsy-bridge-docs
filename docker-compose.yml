@@ -9,7 +9,9 @@ services:
     ports:
       - "51820:51820/udp"            # SIMSY dials this (fixed by SIMSY)
       - "41641:41641/udp"            # Tailscale direct connections
-      - "127.0.0.1:9100:9100/tcp"    # API, reachable from this host only
+      - "127.0.0.1:9100:9100/tcp"    # API, this host only: keep the 127.0.0.1
+                                     # (with host networking, set api.listen
+                                     # to 127.0.0.1:9100 instead)
     volumes:
       - ./config.yaml:/etc/simsy-bridge/config.yaml:ro
       - state:/var/lib/simsy-bridge  # keys, Tailscale identity, event queue
@@ -19,6 +21,8 @@ services:
     read_only: true
     tmpfs: [/tmp]                    # scratch space; the root filesystem is read-only
     cap_drop: [ALL]
+    logging:                         # access records appear in the log too
+      options: {max-size: 10m, max-file: "5"}
 
 volumes:
   state:

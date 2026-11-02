@@ -17,6 +17,7 @@ Also on the SIMSY website: https://s-imsy.com/developers/tools/tailscale
 | [docker-compose.yml](docker-compose.yml) | The compose file from the guide |
 | [config.example.yaml](config.example.yaml) | An example `config.yaml` |
 | [env.example](env.example) | The variables your `.env` file needs |
+| [CHANGELOG.md](CHANGELOG.md) | Releases, and the security fixes in each |
 
 ## The image
 

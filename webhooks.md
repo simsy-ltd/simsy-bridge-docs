@@ -1,6 +1,6 @@
 # Bridge events and webhooks
 
-The bridge sends events to the HTTPS address you give it, so your own systems know when it changes state and who accessed which device. Access events are the evidence trail for NIS2, the EU Cyber Resilience Act and UK PSTI: they record access, they do not make you compliant by themselves.
+The bridge sends events to the HTTPS address you give it, so your own systems know when it changes state and who accessed which device through it. Access events can support your record-keeping, for example under NIS2. They cover access through the bridge only, and do not make you compliant by themselves.
 
 ## Events
 
@@ -44,7 +44,8 @@ Degraded reasons: `handshake_stale` (no recent WireGuard handshake with SIMSY), 
 
 ## Delivery
 
-- `POST` with `Content-Type: application/json`. Answer with any 2xx status within 15 seconds.
+- `POST` with `Content-Type: application/json`, over HTTPS only, to a public address. Redirects are not followed. Answer with any 2xx status within 15 seconds.
+- The webhook secret must be at least 32 characters: generate it with `openssl rand -hex 16`.
 - Headers: `X-SIMSY-Event` (the type), `X-SIMSY-Delivery` (the event ID, the same on every retry: use it to ignore duplicates), `X-SIMSY-Signature`.
 - Events for one bridge arrive in order. If your endpoint fails, the bridge retries after 10 s, 30 s, 1, 2, 5 and 10 minutes, then every 15 minutes, for 24 hours. Events are kept on disk, so a bridge restart does not lose them. Later events wait for earlier ones.
 
@@ -58,7 +59,7 @@ Python:
 import hashlib, hmac, time
 
 def verify(secret: bytes, header: str, body: bytes, tolerance=300) -> bool:
-    parts = dict(p.split("=", 1) for p in header.split(","))
+    parts = dict(p.split("=", 1) for p in (header or "").split(",") if "=" in p)
     t, sig = parts.get("t", ""), parts.get("v1", "")
     if not t.isdigit() or abs(time.time() - int(t)) > tolerance:
         return False
@@ -71,12 +72,16 @@ Node.js:
 ```js
 const crypto = require("crypto");
 
+// rawBody must be the request body as a Buffer, for example from
+// express.raw({type: "application/json"}).
 function verify(secret, header, rawBody, toleranceSeconds = 300) {
-  const parts = Object.fromEntries(header.split(",").map(p => p.split("=", 2)));
+  const parts = Object.fromEntries((header || "").split(",").map(p => p.split("=", 2)));
   const t = Number(parts.t);
   if (!Number.isInteger(t) || Math.abs(Date.now() / 1000 - t) > toleranceSeconds) return false;
   const expected = crypto.createHmac("sha256", secret).update(`${parts.t}.`).update(rawBody).digest("hex");
-  return parts.v1 && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1));
+  // timingSafeEqual throws on different lengths, so check that first.
+  if (typeof parts.v1 !== "string" || parts.v1.length !== expected.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1));
 }
 ```
 

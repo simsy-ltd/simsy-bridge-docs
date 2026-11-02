@@ -9,9 +9,9 @@ your devices ── SIMSY SIMs ── SIMSY core ══ encrypted tunnel ══ 
 ## What you need
 
 - A Linux host with Docker and a public IPv4 address. A small cloud instance is enough (1 vCPU, 1 GB).
-- Inbound UDP 51820 from SIMSY (it dials the bridge; for Europe, from 46.247.38.21) and UDP 41641 from anywhere (Tailscale direct connections). No other ports.
+- Inbound UDP 51820 from SIMSY (it dials the bridge; for Europe, from 46.247.38.21) and UDP 41641 from anywhere (Tailscale direct connections). No other ports. Use your cloud provider's security group for this: ports published by Docker bypass host firewalls such as `ufw`.
 - Admin access to your tailnet's policy file and OAuth clients.
-- A SIMSY API token for your account, and the VSlice to bridge. Its SIM address range must not overlap Tailscale's 100.64.0.0/10; SIMSY support can renumber it if it does.
+- A SIMSY API token for your account, and the VSlice to bridge. Treat the token like a password: it can change your VSlice's routing. Its SIM address range must not overlap Tailscale's 100.64.0.0/10; SIMSY support can renumber it if it does.
 
 ## 1. Tailscale (10 minutes)
 
@@ -31,7 +31,17 @@ Add to your tailnet policy file, replacing `fleet-a` with your VSlice's name:
 ],
 ```
 
+Grant only what the devices need: a grant to the SIM range reaches every device on it. Add a policy test for each grant, so a later edit cannot quietly widen it:
+
+```json
+"tests": [
+    {"src": "ops-person@example.com", "accept": ["10.20.0.10:22"], "deny": ["10.20.0.10:80"]},
+],
+```
+
 Then **Settings, OAuth clients, Generate**: scopes **Devices: Core**, **Devices: Routes** and **Auth Keys**, all write, tagged **only** `tag:simsy-provisioner`. Keep the client ID and secret for step 3. The owner tag matters: an OAuth client's keys must carry exactly its own tags, or tags those tags own.
+
+Protect this secret like an admin password: anyone holding it can add machines with the bridge's tags to your tailnet. Keep it only on the bridge's host, and rotate it if the host is ever compromised.
 
 ## 2. The host
 
@@ -39,7 +49,7 @@ Then **Settings, OAuth clients, Generate**: scopes **Devices: Core**, **Devices:
 mkdir -p ~/simsy-bridge && cd ~/simsy-bridge
 ```
 
-Open UDP 51820 (from SIMSY's address) and UDP 41641 in the host's firewall or cloud security group.
+Open UDP 51820 (from SIMSY's address) and UDP 41641 in your cloud security group. A host firewall such as `ufw` does not filter ports Docker publishes; if you have no security group, add the rules to Docker's `DOCKER-USER` chain instead. Do the same for IPv6 if the host has it.
 
 ## 3. Configuration
 
@@ -62,10 +72,10 @@ tenants:
       oauth_client_id: ${TS_OAUTH_CLIENT_ID}
       oauth_client_secret: ${TS_OAUTH_CLIENT_SECRET}
     webhook:                         # optional: see Bridge events and webhooks
-      url: https://example.com/hooks/simsy
-      secret: ${WEBHOOK_SECRET}
+      url: https://example.com/hooks/simsy   # https only
+      secret: ${WEBHOOK_SECRET}      # at least 32 characters
 api:
-  listen: 0.0.0.0:9100
+  listen: 0.0.0.0:9100               # inside the container; see the ports in docker-compose.yml
 ```
 
 `.env` (readable only by you: `chmod 600 .env`):
@@ -76,6 +86,8 @@ TS_OAUTH_CLIENT_ID=...
 TS_OAUTH_CLIENT_SECRET=...
 WEBHOOK_SECRET=...
 ```
+
+Generate the webhook secret rather than choosing one: `openssl rand -hex 16`. Never paste `.env`, `docker inspect` or `docker compose config` output into a support ticket: they contain these secrets.
 
 `docker-compose.yml`:
 
@@ -91,7 +103,9 @@ services:
     ports:
       - "51820:51820/udp"            # SIMSY dials this (fixed by SIMSY)
       - "41641:41641/udp"            # Tailscale direct connections
-      - "127.0.0.1:9100:9100/tcp"    # API, reachable from this host only
+      - "127.0.0.1:9100:9100/tcp"    # API, this host only: keep the 127.0.0.1
+                                     # (with host networking, set api.listen
+                                     # to 127.0.0.1:9100 instead)
     volumes:
       - ./config.yaml:/etc/simsy-bridge/config.yaml:ro
       - state:/var/lib/simsy-bridge  # keys, Tailscale identity, event queue
@@ -101,6 +115,8 @@ services:
     read_only: true
     tmpfs: [/tmp]                    # scratch space; the root filesystem is read-only
     cap_drop: [ALL]
+    logging:                         # access records appear in the log too
+      options: {max-size: 10m, max-file: "5"}
 
 volumes:
   state:
@@ -149,6 +165,8 @@ cosign verify public.ecr.aws/simsy/simsy-bridge:<version> \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
+A tag can be moved; a digest cannot. After verifying, pin the digest `cosign verify` printed: `image: public.ecr.aws/simsy/simsy-bridge@sha256:...`. Each release is listed, with its security fixes, in the bridge's changelog.
+
 **Remove**: add `delete: true` to the tenant in `config.yaml`, run `docker compose kill -s HUP simsy-bridge`, wait for `deleted` in the log, then `docker compose down`. The bridge removes its Tailscale machine, its rule and its routing target. Remove the policy lines yourself.
 
 ## When something is wrong
@@ -167,5 +185,15 @@ cosign verify public.ecr.aws/simsy/simsy-bridge:<version> \
 Devices answer by address but a device cannot reach your tailnet: add a grant with your SIM range as the source (step 1, second grant).
 
 One device does not answer at all while others on the same VSlice do: if it has another internet connection besides its SIMSY SIM (a second SIM, Ethernet or Wi-Fi), it probably sends its replies out of that one. Add a route on the device sending 100.64.0.0/10 out of its SIMSY cellular interface, and keep its default route as it is. Check on the device with `ip route get 100.100.100.100`: the answer should name the SIMSY interface.
+
+## Security
+
+Report a security problem to support@s-imsy.com with "Security" in the subject. Releases and the security fixes in them are listed in the changelog.
+
+The bridge runs as a non-root user with no added privileges, on a read-only filesystem, with secrets never written to its log. Its API listens on the host only. Keep the host patched, and limit who can log in to it: anyone with root on the host can read the bridge's credentials.
+
+## Privacy
+
+The bridge records each access to a device through it: the tailnet user and machine, the SIM's address and name, times and data volumes. It writes these records to its log and, if you configure a webhook, sends them to you. Nothing is sent to SIMSY. You decide how long to keep them: the compose file above limits the log to 50 MB, and undelivered webhook events are dropped after 24 hours. As with any Tailscale client, the bridge's Tailscale node is subject to Tailscale's own logging; see Tailscale's documentation.
 
 Support: support@s-imsy.com

@@ -16,7 +16,7 @@ tenants:
       oauth_client_id: ${TS_OAUTH_CLIENT_ID}
       oauth_client_secret: ${TS_OAUTH_CLIENT_SECRET}
     webhook:                         # optional: see Bridge events and webhooks
-      url: https://example.com/hooks/simsy
-      secret: ${WEBHOOK_SECRET}
+      url: https://example.com/hooks/simsy   # https only
+      secret: ${WEBHOOK_SECRET}      # at least 32 characters
 api:
-  listen: 0.0.0.0:9100
+  listen: 0.0.0.0:9100               # inside the container; see the ports in docker-compose.yml
