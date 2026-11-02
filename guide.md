@@ -65,7 +65,7 @@ state_dir: /var/lib/simsy-bridge
 listen:
   public_address: 203.0.113.10      # this host's public IPv4 address
 simsy:
-  token: ${SIMSY_API_TOKEN}
+  token: file:/run/secrets/simsy_api_token
   redundancy_zone: europe-primary
 tenants:
   - name: fleet-a
@@ -73,25 +73,29 @@ tenants:
     sim_range: 10.20.0.0/24          # its SIM address range
     downlink_allowed: true           # false: uplink only
     tailscale:
-      oauth_client_id: ${TS_OAUTH_CLIENT_ID}
-      oauth_client_secret: ${TS_OAUTH_CLIENT_SECRET}
+      oauth_client_id: file:/run/secrets/ts_oauth_client_id
+      oauth_client_secret: file:/run/secrets/ts_oauth_client_secret
     webhook:                         # optional: see Bridge events and webhooks
       url: https://example.com/hooks/simsy   # https only
-      secret: ${WEBHOOK_SECRET}      # at least 32 characters
+      secret: file:/run/secrets/webhook_secret   # at least 32 characters
 api:
   listen: 0.0.0.0:9100               # inside the container; see the ports in docker-compose.yml
 ```
 
-`.env` (readable only by you: `chmod 600 .env`):
+The secrets, one file each, readable only by the container's user (65532). Type each value at the prompt so it stays out of your shell history:
 
-```
-SIMSY_API_TOKEN=...
-TS_OAUTH_CLIENT_ID=...
-TS_OAUTH_CLIENT_SECRET=...
-WEBHOOK_SECRET=...
+```bash
+mkdir -m 700 secrets
+read -rsp "SIMSY API token: " v && printf %s "$v" > secrets/simsy_api_token
+read -rsp "Tailscale OAuth client ID: " v && printf %s "$v" > secrets/ts_oauth_client_id
+read -rsp "Tailscale OAuth client secret: " v && printf %s "$v" > secrets/ts_oauth_client_secret
+openssl rand -hex 16 > secrets/webhook_secret   # only if you use a webhook
+unset v; sudo chown 65532 secrets/*; sudo chmod 400 secrets/*
 ```
 
-Generate the webhook secret rather than choosing one: `openssl rand -hex 16`. Never paste `.env`, `docker inspect` or `docker compose config` output into a support ticket: they contain these secrets.
+The `chown` is needed: Docker Compose mounts these files as they are, and ignores `uid` and `mode` settings for them. Without it the bridge stops with `permission denied` on `/run/secrets/...`. If you do not use a webhook, remove the `webhook:` lines from `config.yaml`; if you do, give your receiver the same value (`sudo cat secrets/webhook_secret`). To change a secret later, `sudo rm` its file, repeat its line and the `chown`, then `docker compose up -d --force-recreate`.
+
+Never paste these files, or anything else from the `secrets` directory, into a support ticket.
 
 `docker-compose.yml`:
 
@@ -113,7 +117,13 @@ services:
     volumes:
       - ./config.yaml:/etc/simsy-bridge/config.yaml:ro
       - state:/var/lib/simsy-bridge  # keys, Tailscale identity, event queue
-    env_file: .env
+    # Secrets as files, not environment variables: they stay out of
+    # docker inspect and docker compose config. Mounted in /run/secrets.
+    secrets:
+      - simsy_api_token
+      - ts_oauth_client_id
+      - ts_oauth_client_secret
+      # - webhook_secret             # if you use a webhook
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -124,6 +134,13 @@ services:
 
 volumes:
   state:
+
+# Files on this host, readable only by the container's user (see the guide).
+secrets:
+  simsy_api_token: {file: ./secrets/simsy_api_token}
+  ts_oauth_client_id: {file: ./secrets/ts_oauth_client_id}
+  ts_oauth_client_secret: {file: ./secrets/ts_oauth_client_secret}
+  # webhook_secret: {file: ./secrets/webhook_secret}
 ```
 
 ## 4. Start
@@ -185,6 +202,8 @@ A tag can be moved; a digest cannot. After verifying, pin the digest `cosign ver
 | `simsy_api_error` | Check the SIMSY token and the VSlice name. The detail says which call failed. |
 | `ts_offline` | The host cannot reach Tailscale: check outbound internet access. |
 | `config_error` | The detail names the setting. |
+
+Access records missing: `/status` counts what the bridge could not record. `access_sessions_capped` goes up when one person opens more than 256 sessions at once to devices (a scan of the SIM range, for example), and `access_events_dropped` when events arrive faster than they can be written. Both are also in `/metrics`.
 
 Devices answer by address but a device cannot reach your tailnet: add a grant with your SIM range as the source (step 1, second grant).
 

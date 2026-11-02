@@ -1,11 +1,11 @@
 # SIMSY Tailscale bridge: example config.yaml. See the bridge guide.
-# Values in ${...} come from the environment (.env next to the compose file).
+# file: values are read from the secret files Docker Compose mounts in /run/secrets.
 mode: tenant
 state_dir: /var/lib/simsy-bridge
 listen:
   public_address: 203.0.113.10      # this host's public IPv4 address
 simsy:
-  token: ${SIMSY_API_TOKEN}
+  token: file:/run/secrets/simsy_api_token
   redundancy_zone: europe-primary
 tenants:
   - name: fleet-a
@@ -13,10 +13,10 @@ tenants:
     sim_range: 10.20.0.0/24          # its SIM address range
     downlink_allowed: true           # false: uplink only
     tailscale:
-      oauth_client_id: ${TS_OAUTH_CLIENT_ID}
-      oauth_client_secret: ${TS_OAUTH_CLIENT_SECRET}
+      oauth_client_id: file:/run/secrets/ts_oauth_client_id
+      oauth_client_secret: file:/run/secrets/ts_oauth_client_secret
     webhook:                         # optional: see Bridge events and webhooks
       url: https://example.com/hooks/simsy   # https only
-      secret: ${WEBHOOK_SECRET}      # at least 32 characters
+      secret: file:/run/secrets/webhook_secret   # at least 32 characters
 api:
   listen: 0.0.0.0:9100               # inside the container; see the ports in docker-compose.yml

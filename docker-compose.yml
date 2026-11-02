@@ -15,7 +15,13 @@ services:
     volumes:
       - ./config.yaml:/etc/simsy-bridge/config.yaml:ro
       - state:/var/lib/simsy-bridge  # keys, Tailscale identity, event queue
-    env_file: .env
+    # Secrets as files, not environment variables: they stay out of
+    # docker inspect and docker compose config. Mounted in /run/secrets.
+    secrets:
+      - simsy_api_token
+      - ts_oauth_client_id
+      - ts_oauth_client_secret
+      # - webhook_secret             # if you use a webhook
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -26,3 +32,10 @@ services:
 
 volumes:
   state:
+
+# Files on this host, readable only by the container's user (see the guide).
+secrets:
+  simsy_api_token: {file: ./secrets/simsy_api_token}
+  ts_oauth_client_id: {file: ./secrets/ts_oauth_client_id}
+  ts_oauth_client_secret: {file: ./secrets/ts_oauth_client_secret}
+  # webhook_secret: {file: ./secrets/webhook_secret}

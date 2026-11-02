@@ -16,7 +16,6 @@ Also on the SIMSY website: https://s-imsy.com/developers/tools/tailscale
 | [webhooks.md](webhooks.md) | Bridge events and access records sent to your systems, and how to verify their signatures |
 | [docker-compose.yml](docker-compose.yml) | The compose file from the guide |
 | [config.example.yaml](config.example.yaml) | An example `config.yaml` |
-| [env.example](env.example) | The variables your `.env` file needs |
 | [CHANGELOG.md](CHANGELOG.md) | Releases, and the security fixes in each |
 
 ## The image
