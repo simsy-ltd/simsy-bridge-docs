@@ -160,7 +160,7 @@ From a machine on your tailnet with subnet routes enabled (**Use Tailscale subne
 Status, with the API token the bridge generated on first start:
 
 ```bash
-TOKEN=$(docker compose exec simsy-bridge cat /var/lib/simsy-bridge/api-token)
+TOKEN=$(docker compose cp simsy-bridge:/var/lib/simsy-bridge/api-token - | tar -xO)
 curl -s -H "Authorization: Bearer $TOKEN" localhost:9100/status
 ```
 
