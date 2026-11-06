@@ -2,7 +2,9 @@
 
 Releases of the SIMSY Tailscale bridge image, `public.ecr.aws/simsy/simsy-bridge`. Security fixes are marked **Security**. Verify an image before running it; see the guide.
 
-## Unreleased
+## 0.3.0 (6 November 2026)
+
+The first public release.
 
 - **Security:** SIM devices can no longer query the bridge's own Tailscale DNS resolver.
 - **Security:** one device can no longer fill the bridge's connection table and slow the other devices.
