@@ -2,6 +2,13 @@
 
 Releases of the SIMSY Tailscale bridge image, `public.ecr.aws/simsy/simsy-bridge`. Security fixes are marked **Security**. Verify an image before running it; see the guide.
 
+## 0.4.0 (17 November 2026)
+
+- New `setup` command writes the bridge's configuration for you: it lists your VSlices, reads the SIM range, prints the Tailscale policy lines for your VSlice, checks your OAuth client, and writes `config.yaml`, `docker-compose.yml` and the secret files. See the guide.
+- The guide is rewritten around `setup`, with an explanation of how the bridge works, the terms it uses and where to find each value. Writing the files by hand is still covered.
+- `redundancy_zone` is no longer in the example configuration: `europe-primary`, the default, is the only zone.
+- **Security:** dependency updates, including a fix for a crash on malformed compressed data in a library Tailscale uses (GO-2026-6865), and Tailscale 1.104.5. Built with Go 1.27.4, which fixes a crash in Go's HTTP server (GO-2026-6859).
+
 ## 0.3.0 (6 November 2026)
 
 The first public release.

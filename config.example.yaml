@@ -6,10 +6,9 @@ listen:
   public_address: 203.0.113.10      # this host's public IPv4 address
 simsy:
   token: file:/run/secrets/simsy_api_token
-  redundancy_zone: europe-primary
 tenants:
-  - name: fleet-a
-    vslice: fleet-a                  # your VSlice's moniker
+  - name: fleet-a                    # names the bridge's machine: simsy-fleet-a
+    vslice: fleet-a                  # your VSlice, as the SIMSY portal names it
     sim_range: 10.20.0.0/24          # its SIM address range
     downlink_allowed: true           # false: uplink only
     tailscale:
