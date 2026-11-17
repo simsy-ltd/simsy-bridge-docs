@@ -1,6 +1,6 @@
 # SIMSY Tailscale bridge
 
-The bridge puts the SIMs on your SIMSY VSlice onto your Tailscale network. Your devices keep their SIMSY addresses and answer on your tailnet; nothing is installed on them. You run the bridge as a single container on a Linux host; a `setup` command writes its configuration, and the bridge sets up SIMSY and Tailscale itself and keeps them correct.
+The bridge puts the SIMs on your SIMSY vSlice onto your Tailscale network. Your devices keep their SIMSY addresses and answer on your tailnet; nothing is installed on them. You run the bridge as a single container on a Linux host; a `setup` command writes its configuration, and the bridge sets up SIMSY and Tailscale itself and keeps them correct.
 
 ```
 your devices ── SIMSY SIMs ── SIMSY core ══ encrypted tunnel ══ bridge (your host) ══ your tailnet

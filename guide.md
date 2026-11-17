@@ -22,8 +22,8 @@ Three parts work together:
 
 What the bridge sets up for you, and checks every minute:
 
-- **In SIMSY:** a WireGuard *routing target* (where SIMSY sends your tailnet's traffic) and one *routing rule* in your VSlice's routing policy. Your other rules, including your devices' internet route, are left as they are.
-- **In Tailscale:** a machine called `simsy-<your VSlice>`, tagged so you can recognise it and write rules for it, advertising your SIM range as a *subnet route*.
+- **In SIMSY:** a WireGuard *routing target* (where SIMSY sends your tailnet's traffic) and one *routing rule* in your vSlice's routing policy. Your other rules, including your devices' internet route, are left as they are.
+- **In Tailscale:** a machine called `simsy-<your vSlice>`, tagged so you can recognise it and write rules for it, advertising your SIM range as a *subnet route*.
 
 What stays yours: the bridge never edits your Tailscale policy file. Setup shows you the lines to add, and you decide.
 
@@ -31,8 +31,8 @@ What stays yours: the bridge never edits your Tailscale policy file. Setup shows
 
 | Term | Meaning |
 |---|---|
-| VSlice | Your private network slice on SIMSY: a group of SIMs that share an address range and routing rules. You see your VSlices in the SIMSY portal |
-| SIM range | The block of addresses your VSlice gives its SIMs, such as `10.20.0.0/24`. Your devices are reached at these addresses |
+| vSlice | Your private network slice on SIMSY: a group of SIMs that share an address range and routing rules. You see your vSlices in the SIMSY portal |
+| SIM range | The block of addresses your vSlice gives its SIMs, such as `10.20.0.0/24`. Your devices are reached at these addresses |
 | SIMSY API token | A key the bridge uses to set up the SIMSY side. You create it in the SIMSY portal |
 | Tailnet | Your Tailscale network: everyone and everything signed in to your Tailscale account |
 | Policy file | Your tailnet's access rules, edited in the Tailscale admin console under **Access controls** |
@@ -51,9 +51,9 @@ What stays yours: the bridge never edits your Tailscale policy file. Setup shows
 | Two inbound ports open on the host | SIMSY's tunnel arrives on UDP 51820; Tailscale connects directly on UDP 41641 | Your cloud provider's security group (step 1) |
 | Admin access to your tailnet | To add policy lines and create an OAuth client | The Tailscale admin console, signed in as an Admin or Owner |
 | A SIMSY API token | The bridge sets up the SIMSY side with it | The SIMSY portal, https://portal.s-imsy.com/api-tokens/create (step 2) |
-| The VSlice to bridge | Its SIMs are the devices on your tailnet | Setup lists your VSlices; nothing to look up |
+| The vSlice to bridge | Its SIMs are the devices on your tailnet | Setup lists your vSlices; nothing to look up |
 
-Your VSlice's SIM range must not overlap Tailscale's own addresses, `100.64.0.0/10`. Setup checks this. If it does overlap, you can update the range in your SIMSY portal account.
+Your vSlice's SIM range must not overlap Tailscale's own addresses, `100.64.0.0/10`. Setup checks this. If it does overlap, you can update the range in your SIMSY portal account.
 
 ## 1. Prepare the host
 
@@ -79,9 +79,9 @@ No other inbound ports are needed. Use the security group rather than a host fir
 
 ## 2. Run setup
 
-Setup asks for your SIMSY token, lets you pick your VSlice, shows the Tailscale lines to add, checks your OAuth client works, then writes `config.yaml`, `docker-compose.yml` and a `secrets` directory. Nothing is written until every check passes, and nothing you type as a secret is shown or logged.
+Setup asks for your SIMSY token, lets you pick your vSlice, shows the Tailscale lines to add, checks your OAuth client works, then writes `config.yaml`, `docker-compose.yml` and a `secrets` directory. Nothing is written until every check passes, and nothing you type as a secret is shown or logged.
 
-Before you start it, create a SIMSY API token in the SIMSY portal: https://portal.s-imsy.com/api-tokens/create. Name it after this bridge, so you know what to revoke later. Treat it like a password: it can change your VSlice's routing.
+Before you start it, create a SIMSY API token in the SIMSY portal: https://portal.s-imsy.com/api-tokens/create. Name it after this bridge, so you know what to revoke later. Treat it like a password: it can change your vSlice's routing.
 
 <!-- Screenshot: creating an API token in the SIMSY portal. -->
 
@@ -97,12 +97,12 @@ docker run --rm -it --user 0 -v "$PWD":/setup public.ecr.aws/simsy/simsy-bridge:
 
 Setup walks through four stages:
 
-1. **SIMSY.** Paste your token; it is not shown as you type. Setup lists the VSlices the token can see and reads the chosen VSlice's SIM range.
+1. **SIMSY.** Paste your token; it is not shown as you type. Setup lists the vSlices the token can see and reads the chosen vSlice's SIM range.
 2. **This host.** Enter the public IPv4 address. Setup prints the firewall rule with SIMSY's exact address for your region; open it now if you have not already.
-3. **Tailscale.** Setup prints the lines to add to your policy file, for your VSlice and SIM range. Keep setup open while you:
+3. **Tailscale.** Setup prints the lines to add to your policy file, for your vSlice and SIM range. Keep setup open while you:
     1. In the Tailscale admin console, open **Access controls** and merge the lines into your policy file: each entry goes into the section of the same name. The grant is an example, commented out: adapt it, or add your own grants now or later (step 4). Save.
     2. Open **Settings**, then **OAuth clients**, and generate a client with scopes **Auth Keys** (write), **Devices: Core** (read) and **Devices: Routes** (read), tagged **only** `tag:simsy-provisioner`.
-    3. Paste its client ID and secret into setup. Setup checks the client can add a machine with the bridge's tags, and reads your machines to make sure no other bridge already carries this VSlice. If something is missing, it says what; fix it and press Enter to check again.
+    3. Paste its client ID and secret into setup. Setup checks the client can add a machine with the bridge's tags, and reads your machines to make sure no other bridge already carries this vSlice. If something is missing, it says what; fix it and press Enter to check again.
 4. **Options.** Choose whether machines on your tailnet may open connections to your devices (say no for *uplink only*: devices can still reach your tailnet), and optionally give a webhook URL for events and access records.
 
 <!-- Screenshot: Tailscale Access controls with the lines added. -->
@@ -119,7 +119,7 @@ docker compose logs -f
 
 Within a minute or two the log shows `provisioning`, then `online`. Then check each side:
 
-- **Tailscale:** in the admin console's **Machines** page, `simsy-<your VSlice>` is listed with the tags `tag:simsy` and `tag:simsy-<your VSlice>`, and its subnet route shows as approved.
+- **Tailscale:** in the admin console's **Machines** page, `simsy-<your vSlice>` is listed with the tags `tag:simsy` and `tag:simsy-<your vSlice>`, and its subnet route shows as approved.
 - **Your computer:** turn on subnet routes in your Tailscale client (**Use Tailscale subnets** in the menu, or `tailscale set --accept-routes` on Linux), then reach a device at its SIM address, for example `ping 10.20.0.10`, or open its web page.
 
 <!-- Screenshot: the bridge in Machines, route approved. -->
@@ -159,7 +159,7 @@ curl -s -H "Authorization: Bearer $TOKEN" localhost:9100/status
 **Uplink only** (devices can reach the tailnet; nothing on the tailnet can open a connection to them):
 
 ```bash
-curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -d '{"allowed": false}' localhost:9100/tenants/<your VSlice>/downlink
+curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -d '{"allowed": false}' localhost:9100/tenants/<your vSlice>/downlink
 ```
 
 It takes effect at once and survives restarts. `DELETE` on the same address returns to the config file's setting. Editing `downlink_allowed` in `config.yaml` and sending `docker compose kill -s HUP simsy-bridge` also works.
@@ -187,9 +187,9 @@ A tag can be moved; a digest cannot. After verifying, pin the digest `cosign ver
 | Reason | What to do |
 |---|---|
 | `tags_not_assignable` | The `tagOwners` lines from setup are missing, or the OAuth client is not tagged `tag:simsy-provisioner`. |
-| `route_unapproved` | Usually clears by itself within a minute. If not, check `autoApprovers` in your policy names your SIM range and `tag:simsy-<your VSlice>` exactly. |
+| `route_unapproved` | Usually clears by itself within a minute. If not, check `autoApprovers` in your policy names your SIM range and `tag:simsy-<your vSlice>` exactly. |
 | `handshake_stale` | SIMSY cannot reach the bridge: check UDP 51820 is open from SIMSY's address, and `public_address` in `config.yaml` is the host's public address. |
-| `simsy_api_error` | Check the SIMSY token has not been revoked, and the VSlice still exists. The detail says which call failed. |
+| `simsy_api_error` | Check the SIMSY token has not been revoked, and the vSlice still exists. The detail says which call failed. |
 | `ts_offline` | The host cannot reach Tailscale: check outbound internet access. |
 | `config_error` | The detail names the setting. |
 
@@ -197,7 +197,7 @@ The bridge stops at start with `permission denied` on `/run/secrets/...`: the se
 
 Devices answer by address but a device cannot reach your tailnet: add a grant with your SIM range as the source (step 4).
 
-One device does not answer while others on the same VSlice do: if it has another internet connection besides its SIMSY SIM (a second SIM, Ethernet or Wi-Fi), it probably sends its replies out of that one. Add a route on the device sending `100.64.0.0/10` out of its SIMSY cellular interface, and keep its default route as it is. Check on the device with `ip route get 100.100.100.100`: the answer should name the SIMSY interface.
+One device does not answer while others on the same vSlice do: if it has another internet connection besides its SIMSY SIM (a second SIM, Ethernet or Wi-Fi), it probably sends its replies out of that one. Add a route on the device sending `100.64.0.0/10` out of its SIMSY cellular interface, and keep its default route as it is. Check on the device with `ip route get 100.100.100.100`: the answer should name the SIMSY interface.
 
 Access records missing: `/status` counts what the bridge could not record. `access_sessions_capped` goes up when one person opens more than 256 sessions at once to devices (a scan of the SIM range, for example), and `access_events_dropped` when events arrive faster than they can be written. Both are also in `/metrics`.
 
@@ -216,7 +216,7 @@ simsy:
   token: file:/run/secrets/simsy_api_token
 tenants:
   - name: fleet-a                    # names the bridge's machine: simsy-fleet-a
-    vslice: fleet-a                  # your VSlice, as the SIMSY portal names it
+    vslice: fleet-a                  # your vSlice, as the SIMSY portal names it
     sim_range: 10.20.0.0/24          # its SIM address range
     downlink_allowed: true           # false: uplink only
     tailscale:
@@ -290,7 +290,7 @@ secrets:
   # webhook_secret: {file: ./secrets/webhook_secret}
 ```
 
-For the Tailscale side by hand, add the policy lines setup would print, with your VSlice name in place of `fleet-a` and your SIM range in place of `10.20.0.0/24`:
+For the Tailscale side by hand, add the policy lines setup would print, with your vSlice name in place of `fleet-a` and your SIM range in place of `10.20.0.0/24`:
 
 ```json
 "tagOwners": {
@@ -311,7 +311,7 @@ Report a security problem to support@s-imsy.com with "Security" in the subject. 
 
 The bridge runs as a non-root user with no added privileges, on a read-only filesystem, with secrets never written to its log. Its API listens on the host only. Setup runs once, as root inside its own container, and writes only to the directory you mount. Keep the host patched, and limit who can log in to it: anyone with root on the host can read the bridge's credentials.
 
-The bridge should be the only machine with `tag:simsy-<your VSlice>`: a second one in the admin console, or a Tailscale **Node created** notification you did not expect, means the OAuth client's secret is being used elsewhere. Revoke it and run setup again.
+The bridge should be the only machine with `tag:simsy-<your vSlice>`: a second one in the admin console, or a Tailscale **Node created** notification you did not expect, means the OAuth client's secret is being used elsewhere. Revoke it and run setup again.
 
 ## Privacy
 
